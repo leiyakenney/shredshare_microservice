@@ -1,2 +1,2 @@
-require '.locations'
+require 'locations.rb'
 run Sinatra::Application
