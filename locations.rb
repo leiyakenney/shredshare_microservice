@@ -12,7 +12,7 @@ require './app/lib/rtd_location'
 require 'rubygems'
 require 'bundler'
 
-class LocationsApp
+class LocationsApp < Sinatra::Base
   get'/' do
     'This is a microservice application exposing custom APIs for the ShredShare ride share application that can be visitied at shred-share.herokuapp.com'
 
