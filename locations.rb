@@ -11,6 +11,7 @@ require './app/lib/rtd_location'
 require 'rubygems'
 require 'bundler'
 
+class LocationsApp
   get'/' do
     'This is a microservice application exposing custom APIs for the ShredShare ride share application that can be visitied at shred-share.herokuapp.com'
 
@@ -66,3 +67,4 @@ require 'bundler'
     end
     cities.zip(location_arrays).to_s
   end
+end
