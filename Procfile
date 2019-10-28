@@ -1,1 +1,1 @@
-web:bundle exec sinatra config.ru -p $PORT
+web:bundle exec ruby config.ru -p $PORT
