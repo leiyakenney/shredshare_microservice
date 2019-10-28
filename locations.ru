@@ -11,12 +11,12 @@ require './app/lib/rtd_location'
 require 'rubygems'
 require 'bundler'
 
-get'/' do
-  'This is a microservice application exposing custom APIs for the ShredShare ride share application that can be visitied at shred-share.herokuapp.com'
+  get'/' do
+    'This is a microservice application exposing custom APIs for the ShredShare ride share application that can be visitied at shred-share.herokuapp.com'
 
-end
+  end
 
-get '/rtd_locations/index' do
+  get '/rtd_locations/index' do
   #to make operation dynamic, need the following:
   # 1. api_key needs to be ENV
 
@@ -34,38 +34,37 @@ get '/rtd_locations/index' do
     longitude = geocode_parsed_coords[:lng]
 
     #nearbysearch endpoint below to obtain place_ids. this will be used to obtain place details from a separate API call, also below.
-    nearbysearch_endpoint = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=#{ENV['GOOGLE_API_KEY']}&radius=8046&keyword=Park-N-Ride&location=#{latitude}, #{longitude}"
-    #Note: Park-N-Ride only returns limited RTD locations.  Need to include search for PnR as well due to RTD's poor data formatting.
-    uri = URI.parse(URI.encode(nearbysearch_endpoint))
-    api_response = Net::HTTP.get(uri)
-    parsed_locations = JSON.parse(api_response, symbolize_names: true)
+      nearbysearch_endpoint = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=#{ENV['GOOGLE_API_KEY']}&radius=8046&keyword=Park-N-Ride&location=#{latitude}, #{longitude}"
+  #Note: Park-N-Ride only returns limited RTD locations.  Need to include search for PnR as well due to RTD's poor data formatting.
+      uri = URI.parse(URI.encode(nearbysearch_endpoint))
+      api_response = Net::HTTP.get(uri)
+      parsed_locations = JSON.parse(api_response, symbolize_names: true)
 
-    nearbysearch_results = parsed_locations[:results]
-    rtd_place_ids = nearbysearch_results.map do |hash|
-      RtdPlaceId.new(hash)
+      nearbysearch_results = parsed_locations[:results]
+      rtd_place_ids = nearbysearch_results.map do |hash|
+        RtdPlaceId.new(hash)
+      end
+
+      #passing place_ids into Place Details endpoint to obtain complete addresses and names for nearby RTD stations.
+      rtd_place_ids.map do |place|
+        place_details_endpoint = "https://maps.googleapis.com/maps/api/place/details/json?key=#{ENV['GOOGLE_API_KEY']}&placeid=#{place.place_id}"
+
+        place_details_uri = URI.parse(URI.encode(place_details_endpoint))
+        place_details_response = Net::HTTP.get(place_details_uri)
+        parsed_location_details = JSON.parse(place_details_response, symbolize_names: true)
+        name = parsed_location_details[:result][:name]
+        address = parsed_location_details[:result][:formatted_address]
+        RtdLocation.new(name, address)
+      end
     end
-
-    #passing place_ids into Place Details endpoint to obtain complete addresses and names for nearby RTD stations.
-    rtd_place_ids.map do |place|
-      place_details_endpoint = "https://maps.googleapis.com/maps/api/place/details/json?key=#{ENV['GOOGLE_API_KEY']}&placeid=#{place.place_id}"
-
-      place_details_uri = URI.parse(URI.encode(place_details_endpoint))
-      place_details_response = Net::HTTP.get(place_details_uri)
-      parsed_location_details = JSON.parse(place_details_response, symbolize_names: true)
-      name = parsed_location_details[:result][:name]
-      address = parsed_location_details[:result][:formatted_address]
-      RtdLocation.new(name, address)
+#the location below actually refers to a single city
+    location_arrays = locations.map! do |city|
+      city.map! do |location|
+        location_hash = {name: location.name, address: location.address, city: location.city}
+        location_hash.to_json
+      end
     end
+    cities.zip(location_arrays).to_s
   end
-  #the location below actually refers to a single city
-  location_arrays = locations.map! do |city|
-    city.map! do |location|
-      location_hash = {name: location.name, address: location.address, city: location.city}
-      location_hash.to_json
-    end
-  end
-  cities.zip(location_arrays).to_s
-  end
-end
 
-Sinatra::Application.run!
+  Sinatra::Application.run!
