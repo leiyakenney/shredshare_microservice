@@ -62,6 +62,7 @@ DEPENDENCIES
   dotenv
   fast_jsonapi
   json
+  rack
   sinatra
   sinatra-active-model-serializers
   sinatra-contrib
