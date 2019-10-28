@@ -1,6 +1,7 @@
 require 'dotenv'
 Dotenv.load
 require 'sinatra'
+require 'sinatra/base'
 require 'sinatra/json'
 require 'json'
 require 'net/http'
